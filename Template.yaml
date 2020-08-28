@@ -1,0 +1,71 @@
+#queue_submit: yes
+#queue_jobname: mp2d_fit
+#queue_name: pq-12-2
+
+job: parametrize
+
+optimizer: trim
+opt_quality: 0.001
+maxcycles: 2
+numerical_gradient_step: 0.00001
+trust_radius: 0.01 # 0.1 * default
+ignore_recommendations: yes
+
+parametrize_sign_check: no
+parametrize_grad_2side: no
+
+optimized_parameters:
+  development->:d3_double_damping_r: param_6
+  development->:d3_double_damping_w: param_7
+  d3_s8: param_3
+  d3_a1: param_4
+  d3_a2: param_5
+  x0: param_1
+  x1: param_2
+
+calculation:
+  job: multistep
+  steps: set1
+  multistep_print: no
+
+  multistep_result_expression: "steps['set1'].errors.rmse / steps['set1'].avg_ref_abs*2"
+  multistep_result_name: "relRMSE"
+
+  calculation_set1:
+    job: dataset
+    dataset: GMTKN55_SCONF
+    dataset_add_ref_to_result: "HF/CBS(Grimme) + x0 * MP2corr_os/CBS(Grimme) + x1 * MP2corr_ss/CBS(Grimme)"
+    x0: 0.0
+    x1: 1.0
+  
+    calculation:
+      job: energy
+    
+      x0: 0.0
+      x1: 1.0
+      interface: mixer
+      mixer_weight_a: 1.0
+      mixer_weight_b: -1.0
+      mixer_weight_b_expression: "-0.5 * (@settings[:x0] + @settings[:x1])"
+    
+      calculation_common:
+        interface: dispersion3
+        d3_s6: 1.0
+        d3_damping: tt
+        d3_hybridization: grimme_mod
+        development:
+          d3_double_damping4: yes
+          d3_double_damping_r: 0.7
+          d3_double_damping_w: 0.2
+      calculation_a: # CKS
+        #block_flag: cks
+        d3_s8: 1.0976004504742118
+        d3_a1: 1.6546007958167175
+        d3_a2: -0.44650292960634314
+      calculation_b: # UCHF
+        #block_flag: uchf
+        d3_data_patch: uchf_unrest_mod.yaml
+        d3_s8: 1.1031963902178463
+        d3_a1: 0.9111981070595497
+        d3_a2: 1.3006406377905153
+
